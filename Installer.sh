@@ -32,8 +32,10 @@ mkdir -p /etc/zivpn
 cat <<EOF > /etc/zivpn/config.json
 {
   "listen": ":5667",
+  "protocol": "wechat-video",
   "cert": "/etc/zivpn/zivpn.crt",
   "key": "/etc/zivpn/zivpn.key",
+  "obfs": "df4d89ba09fb3c2865c696a8049f5c32",
   "auth": {
     "mode": "passwords",
     "config": []
