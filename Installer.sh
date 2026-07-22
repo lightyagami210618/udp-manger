@@ -36,6 +36,7 @@ cat <<EOF > /etc/zivpn/config.json
   "listen": ":5667",
   "cert": "/etc/zivpn/zivpn.crt",
   "key": "/etc/zivpn/zivpn.key",
+  "obfs": "wechat.com",
   "auth": {
     "mode": "passwords",
     "config": []
