@@ -23,20 +23,17 @@ apt-get install -y wget curl jq openssl iptables ufw
 # ၂။ ယခင် ရှိပြီးသား Service ကို ရပ်တန့်ခြင်း
 systemctl stop zivpn.service 1> /dev/null 2> /dev/null
 
-# ၃။ ZiVPN Binary ကို ဒေါင်းလုဒ်ဆွဲခြင်းနှင့် Custom Config ဖန်တီးခြင်း
+# ၃။ ZiVPN Binary ကို ဒေါင်းလုဒ်ဆွဲပြီး zivpn-core နာမည်ဖြင့် သိမ်းခြင်း
 echo -e "\n${YELLOW}[2/6] Downloading ZiVPN UDP Binary...${NC}"
 wget https://github.com/zahidbd2/udp-zivpn/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 -O /usr/local/bin/zivpn-core 1> /dev/null 2> /dev/null
 chmod +x /usr/local/bin/zivpn-core
 
 mkdir -p /etc/zivpn
-
-# Default config.json ဖိုင်အသစ် ဖန်တီးခြင်း (zi password အစား စိတ်ကြိုက် password ထည့်ရန်)
 cat <<EOF > /etc/zivpn/config.json
 {
   "listen": ":5667",
   "cert": "/etc/zivpn/zivpn.crt",
   "key": "/etc/zivpn/zivpn.key",
-  "obfs": "wechat.com",
   "auth": {
     "mode": "passwords",
     "config": []
