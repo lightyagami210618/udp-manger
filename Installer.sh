@@ -1,6 +1,6 @@
 #!/bin/bash
 # Zivpn UDP Module All-in-One Installer & Manager Setup
-# GitHub Repository: lightyagami210618/udp-manger
+# Fixed IPTables REDIRECT, IP Forwarding & Default Password
 
 # Color Definitions
 RED='\033[0;31m'
@@ -46,6 +46,8 @@ EOF
 echo -e "\n${YELLOW}[3/6] Generating SSL Certificates & Optimizing System...${NC}"
 openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=California/L=Los Angeles/O=Example Corp/OU=IT Department/CN=zivpn" -keyout "/etc/zivpn/zivpn.key" -out "/etc/zivpn/zivpn.crt" 1> /dev/null 2> /dev/null
 
+# Enabling Kernel IP Forwarding & Buffer Limits
+sysctl -w net.ipv4.ip_forward=1 1> /dev/null 2> /dev/null
 sysctl -w net.core.rmem_max=16777216 1> /dev/null 2> /dev/null
 sysctl -w net.core.wmem_max=16777216 1> /dev/null 2> /dev/null
 
@@ -72,14 +74,14 @@ NoNewPrivileges=true
 WantedBy=multi-user.target
 EOF
 
-# ၆။ Firewall Rules နှင့် Port Forwarding သတ်မှတ်ခြင်း
+# ၆။ Firewall Rules နှင့် Port Forwarding သတ်မှတ်ခြင်း (Fixed REDIRECT)
 echo -e "\n${YELLOW}[5/6] Configuring Firewall & Port Forwarding...${NC}"
 systemctl daemon-reload
 systemctl enable zivpn.service
 systemctl start zivpn.service
 
 IFACE=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
-iptables -t nat -A PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j DNAT --to-destination :5667
+iptables -t nat -A PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j REDIRECT --to-port 5667
 ufw allow 6000:19999/udp 1> /dev/null 2> /dev/null
 ufw allow 5667/udp 1> /dev/null 2> /dev/null
 
@@ -106,7 +108,7 @@ zivpn_menu() {
     echo -e "${CYAN}==========================================${NC}"
     echo -e " ${YELLOW}Status${NC}    : ${GREEN}$(systemctl is-active zivpn.service)${NC}"
     echo -e " ${YELLOW}Server IP${NC} : ${GREEN}$(curl -4 -s ifconfig.me)${NC}"
-    echo -e " ${YELLOW}UDP Ports${NC} : ${GREEN}6000:19999 (DNAT -> 5667)${NC}"
+    echo -e " ${YELLOW}UDP Ports${NC} : ${GREEN}6000:19999 (REDIRECT -> 5667)${NC}"
     echo -e "${CYAN}==========================================${NC}"
     echo -e " ${YELLOW}[1]${NC} Add New Password"
     echo -e " ${YELLOW}[2]${NC} Delete Password"
@@ -176,7 +178,7 @@ zivpn_menu() {
                 ufw delete allow 5667/udp 2>/dev/null
                 IFACE=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
                 if [ -n "$IFACE" ]; then
-                    iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j DNAT --to-destination :5667 2>/dev/null
+                    iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j REDIRECT --to-port 5667 2>/dev/null
                 fi
                 
                 echo -e "\n${GREEN}[✔] ZiVPN UDP has been completely uninstalled!${NC}"
@@ -209,5 +211,6 @@ clear
 echo -e "${CYAN}==========================================${NC}"
 echo -e "${GREEN}    ZIVPN UDP INSTALLATION COMPLETE!     ${NC}"
 echo -e "${CYAN}==========================================${NC}"
+echo -e " Default Password : ${YELLOW}1234${NC}"
 echo -e " Type '${YELLOW}zivpn${NC}' anywhere to open manager.   "
 echo -e "${CYAN}==========================================${NC}"
