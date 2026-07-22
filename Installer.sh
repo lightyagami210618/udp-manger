@@ -1,6 +1,6 @@
 #!/bin/bash
 # Zivpn UDP Module All-in-One Installer & Manager Setup
-# Based on Zahid Islam ZiVPN Core
+# GitHub Repository: lightyagami210618/udp-manger
 
 clear
 echo "=========================================="
@@ -65,7 +65,7 @@ iptables -t nat -A PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j DNAT --to
 ufw allow 6000:19999/udp 1> /dev/null 2> /dev/null
 ufw allow 5667/udp 1> /dev/null 2> /dev/null
 
-# ၇။ Terminal မှ 'zivpn' ဟု ရိုက်ပါက ပွင့်လာမည့် Interactive Menu Command ဖန်တီးခြင်း
+# ၇။ Manager Menu Panel (Built-in Uninstall အပါအဝင်) ဖန်တီးခြင်း
 echo -e "\n[6/6] Setting up ZiVPN Manager Menu Command..."
 cat <<'EOF' > /usr/bin/zivpn
 #!/bin/bash
@@ -85,6 +85,7 @@ zivpn_menu() {
     echo "[2] Delete Password"
     echo "[3] Show Active Passwords"
     echo "[4] Restart ZiVPN Service"
+    echo "[5] Uninstall ZiVPN UDP"
     echo "[0] Exit"
     echo "=========================================="
     read -p "//_ Choose an option: " opt
@@ -130,6 +131,35 @@ zivpn_menu() {
             echo -e "\n[✔] ZiVPN Service Restarted!"
             sleep 2
             zivpn_menu
+            ;;
+        5)
+            echo -e "\n=========================================="
+            read -p "Are you sure you want to uninstall ZiVPN UDP? (y/N): " confirm
+            if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                echo -e "\nRemoving ZiVPN UDP Service & Files..."
+                systemctl stop zivpn.service 2>/dev/null
+                systemctl disable zivpn.service 2>/dev/null
+                rm -f /etc/systemd/system/zivpn.service
+                systemctl daemon-reload
+                rm -rf /etc/zivpn
+                rm -f /usr/local/bin/zivpn
+                
+                # Clearing Firewall rules
+                ufw delete allow 6000:19999/udp 2>/dev/null
+                ufw delete allow 5667/udp 2>/dev/null
+                IFACE=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
+                if [ -n "$IFACE" ]; then
+                    iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j DNAT --to-destination :5667 2>/dev/null
+                fi
+                
+                echo -e "\n[✔] ZiVPN UDP has been completely uninstalled!"
+                rm -f /usr/bin/zivpn
+                exit 0
+            else
+                echo -e "\n[!] Uninstallation canceled."
+                sleep 2
+                zivpn_menu
+            fi
             ;;
         0)
             exit 0
