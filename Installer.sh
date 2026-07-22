@@ -23,20 +23,17 @@ apt-get install -y wget curl jq openssl iptables ufw
 # ၂။ ယခင် ရှိပြီးသား Service ကို ရပ်တန့်ခြင်း
 systemctl stop zivpn.service 1> /dev/null 2> /dev/null
 
-# ၃။ ZiVPN Binary ကို ဒေါင်းလုဒ်ဆွဲခြင်းနှင့် Password အလွတ် Config ဖန်တီးခြင်း
+# ၃။ ZiVPN Binary ကို ဒေါင်းလုဒ်ဆွဲပြီး zivpn-core နာမည်ဖြင့် သိမ်းခြင်း
 echo -e "\n${YELLOW}[2/6] Downloading ZiVPN UDP Binary...${NC}"
 wget https://github.com/zahidbd2/udp-zivpn/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 -O /usr/local/bin/zivpn-core 1> /dev/null 2> /dev/null
 chmod +x /usr/local/bin/zivpn-core
 
 mkdir -p /etc/zivpn
-
-# Default config.json (Password အလွတ်ဖြင့် ဖန်တီးခြင်း)
 cat <<EOF > /etc/zivpn/config.json
 {
   "listen": ":5667",
   "cert": "/etc/zivpn/zivpn.crt",
   "key": "/etc/zivpn/zivpn.key",
-  "obfs": "wechat.com",
   "auth": {
     "mode": "passwords",
     "config": []
@@ -163,7 +160,7 @@ zivpn_menu() {
             ;;
         5)
             echo -e "\n${RED}==========================================${NC}"
-            read -p "Are you sure you want to uninstall ZiVPN UDP? (y/n): " confirm
+            read -p "Are you sure you want to uninstall ZiVPN UDP? (y/N): " confirm
             if [[ "$confirm" =~ ^[Yy]$ ]]; then
                 echo -e "\n${YELLOW}Removing ZiVPN UDP Service & Files...${NC}"
                 systemctl stop zivpn.service 2>/dev/null
