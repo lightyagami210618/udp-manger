@@ -16,10 +16,10 @@ apt-get install -y wget curl jq openssl iptables ufw
 # ၂။ ယခင် ရှိပြီးသား Service ကို ရပ်တန့်ခြင်း
 systemctl stop zivpn.service 1> /dev/null 2> /dev/null
 
-# ၃။ ZiVPN Binary ကို ဒေါင်းလုဒ်ဆွဲပြီး Permission ပေးခြင်း
+# ၃။ ZiVPN Binary ကို ဒေါင်းလုဒ်ဆွဲပြီး zivpn-core နာမည်ဖြင့် သိမ်းခြင်း (Name Collision မဖြစ်စေရန်)
 echo -e "\n[2/6] Downloading ZiVPN UDP Binary..."
-wget https://github.com/zahidbd2/udp-zivpn/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 -O /usr/local/bin/zivpn 1> /dev/null 2> /dev/null
-chmod +x /usr/local/bin/zivpn
+wget https://github.com/zahidbd2/udp-zivpn/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 -O /usr/local/bin/zivpn-core 1> /dev/null 2> /dev/null
+chmod +x /usr/local/bin/zivpn-core
 
 mkdir -p /etc/zivpn
 wget https://raw.githubusercontent.com/zahidbd2/udp-zivpn/main/config.json -O /etc/zivpn/config.json 1> /dev/null 2> /dev/null
@@ -42,7 +42,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/etc/zivpn
-ExecStart=/usr/local/bin/zivpn server -c /etc/zivpn/config.json
+ExecStart=/usr/local/bin/zivpn-core server -c /etc/zivpn/config.json
 Restart=always
 RestartSec=3
 Environment=ZIVPN_LOG_LEVEL=info
@@ -65,9 +65,9 @@ iptables -t nat -A PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j DNAT --to
 ufw allow 6000:19999/udp 1> /dev/null 2> /dev/null
 ufw allow 5667/udp 1> /dev/null 2> /dev/null
 
-# ၇။ Manager Menu Panel (Built-in Uninstall အပါအဝင်) ဖန်တီးခြင်း
+# ၇။ Manager Menu Command ကို /usr/local/bin/zivpn အဖြစ် သတ်မှတ်ခြင်း
 echo -e "\n[6/6] Setting up ZiVPN Manager Menu Command..."
-cat <<'EOF' > /usr/bin/zivpn
+cat <<'EOF' > /usr/local/bin/zivpn
 #!/bin/bash
 
 CONFIG_FILE="/etc/zivpn/config.json"
@@ -142,7 +142,7 @@ zivpn_menu() {
                 rm -f /etc/systemd/system/zivpn.service
                 systemctl daemon-reload
                 rm -rf /etc/zivpn
-                rm -f /usr/local/bin/zivpn
+                rm -f /usr/local/bin/zivpn-core
                 
                 # Clearing Firewall rules
                 ufw delete allow 6000:19999/udp 2>/dev/null
@@ -153,7 +153,7 @@ zivpn_menu() {
                 fi
                 
                 echo -e "\n[✔] ZiVPN UDP has been completely uninstalled!"
-                rm -f /usr/bin/zivpn
+                rm -f /usr/local/bin/zivpn /usr/bin/zivpn 2>/dev/null
                 exit 0
             else
                 echo -e "\n[!] Uninstallation canceled."
@@ -176,7 +176,7 @@ zivpn_menu
 EOF
 
 # Menu command ကို execute permission ပေးခြင်း
-chmod +x /usr/bin/zivpn
+chmod +x /usr/local/bin/zivpn
 
 clear
 echo "=========================================="
