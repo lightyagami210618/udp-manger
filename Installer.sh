@@ -80,8 +80,8 @@ systemctl enable zivpn.service
 systemctl start zivpn.service
 
 IFACE=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
-iptables -t nat -A PREROUTING -i "$IFACE" -p udp --dport 5600:5700 -j DNAT --to-destination :5667
-ufw allow 5600:5700/udp 1> /dev/null 2> /dev/null
+iptables -t nat -A PREROUTING -i "$IFACE" -p udp --dport 6000:9999 -j DNAT --to-destination :5667
+ufw allow 6000:9999/udp 1> /dev/null 2> /dev/null
 ufw allow 5667/udp 1> /dev/null 2> /dev/null
 
 # ၇။ Colored Manager Menu Panel ဖန်တီးခြင်း
@@ -107,7 +107,7 @@ zivpn_menu() {
     echo -e "${CYAN}==========================================${NC}"
     echo -e " ${YELLOW}Status${NC}    : ${GREEN}$(systemctl is-active zivpn.service)${NC}"
     echo -e " ${YELLOW}Server IP${NC} : ${GREEN}$(curl -4 -s ifconfig.me)${NC}"
-    echo -e " ${YELLOW}UDP Ports${NC} : ${GREEN}5600:5700 (DNAT -> 5667)${NC}"
+    echo -e " ${YELLOW}UDP Ports${NC} : ${GREEN}6000:9999 (DNAT -> 5667)${NC}"
     echo -e "${CYAN}==========================================${NC}"
     echo -e " ${YELLOW}[1]${NC} Add New Password"
     echo -e " ${YELLOW}[2]${NC} Delete Password"
@@ -173,11 +173,11 @@ zivpn_menu() {
                 rm -f /usr/local/bin/zivpn-core
                 
                 # Clearing Firewall rules
-                ufw delete allow 5600:5700/udp 2>/dev/null
+                ufw delete allow 6000:9999/udp 2>/dev/null
                 ufw delete allow 5667/udp 2>/dev/null
                 IFACE=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
                 if [ -n "$IFACE" ]; then
-                    iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 5600:5700 -j DNAT --to-destination :5667 2>/dev/null
+                    iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 6000:9999 -j DNAT --to-destination :5667 2>/dev/null
                 fi
                 
                 echo -e "\n${GREEN}[✔] ZiVPN UDP has been completely uninstalled!${NC}"
