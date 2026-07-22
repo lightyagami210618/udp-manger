@@ -29,11 +29,14 @@ wget https://github.com/zahidbd2/udp-zivpn/releases/download/udp-zivpn_1.4.9/udp
 chmod +x /usr/local/bin/zivpn-core
 
 mkdir -p /etc/zivpn
+
+# Default config.json ဖိုင်အသစ် ဖန်တီးခြင်း (zi password အစား စိတ်ကြိုက် password ထည့်ရန်)
 cat <<EOF > /etc/zivpn/config.json
 {
   "listen": ":5667",
   "cert": "/etc/zivpn/zivpn.crt",
   "key": "/etc/zivpn/zivpn.key",
+  "obfs": "wechat.com",
   "auth": {
     "mode": "passwords",
     "config": []
@@ -78,8 +81,8 @@ systemctl enable zivpn.service
 systemctl start zivpn.service
 
 IFACE=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
-iptables -t nat -A PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j DNAT --to-destination :5667
-ufw allow 6000:19999/udp 1> /dev/null 2> /dev/null
+iptables -t nat -A PREROUTING -i "$IFACE" -p udp --dport 6000:6050 -j DNAT --to-destination :5667
+ufw allow 6000:6050/udp 1> /dev/null 2> /dev/null
 ufw allow 5667/udp 1> /dev/null 2> /dev/null
 
 # ၇။ Colored Manager Menu Panel ဖန်တီးခြင်း
@@ -105,7 +108,7 @@ zivpn_menu() {
     echo -e "${CYAN}==========================================${NC}"
     echo -e " ${YELLOW}Status${NC}    : ${GREEN}$(systemctl is-active zivpn.service)${NC}"
     echo -e " ${YELLOW}Server IP${NC} : ${GREEN}$(curl -4 -s ifconfig.me)${NC}"
-    echo -e " ${YELLOW}UDP Ports${NC} : ${GREEN}6000:19999 (DNAT -> 5667)${NC}"
+    echo -e " ${YELLOW}UDP Ports${NC} : ${GREEN}6000:6050 (DNAT -> 5667)${NC}"
     echo -e "${CYAN}==========================================${NC}"
     echo -e " ${YELLOW}[1]${NC} Add New Password"
     echo -e " ${YELLOW}[2]${NC} Delete Password"
@@ -171,11 +174,11 @@ zivpn_menu() {
                 rm -f /usr/local/bin/zivpn-core
                 
                 # Clearing Firewall rules
-                ufw delete allow 6000:19999/udp 2>/dev/null
+                ufw delete allow 6000:6050/udp 2>/dev/null
                 ufw delete allow 5667/udp 2>/dev/null
                 IFACE=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
                 if [ -n "$IFACE" ]; then
-                    iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j DNAT --to-destination :5667 2>/dev/null
+                    iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 6000:6050 -j DNAT --to-destination :5667 2>/dev/null
                 fi
                 
                 echo -e "\n${GREEN}[✔] ZiVPN UDP has been completely uninstalled!${NC}"
