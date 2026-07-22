@@ -1,126 +1,156 @@
 #!/bin/bash
-
-# ၁။ Root User ဟုတ်/မဟုတ် စစ်ဆေးခြင်း
-if [ "$EUID" -ne 0 ]; then
-  echo "Error: Please run as root user!"
-  exit 1
-fi
+# Zivpn UDP Module All-in-One Installer & Manager Setup
+# Based on Zahid Islam ZiVPN Core
 
 clear
 echo "=========================================="
-echo "    STARTING UDP CUSTOM AUTO INSTALLER    "
+echo "   STARTING ZIVPN UDP AUTO INSTALLATION   "
 echo "=========================================="
 sleep 2
 
-# ၂။ လိုအပ်သည့် Packages များကို Install တင်ခြင်း
-echo "[1/4] Installing dependencies..."
+# ၁။ Server Update ပြုလုပ်ခြင်းနှင့် လိုအပ်သော Packages များ တင်ခြင်း
+echo -e "\n[1/6] Updating system and installing dependencies..."
 apt-get update -y
-apt-get install -y curl wget jq net-tools iptables
+apt-get install -y wget curl jq openssl iptables ufw
 
-# ၃။ Directory ပြုလုပ်ခြင်းနှင့် Binary/Config ထည့်သွင်းခြင်း
-echo "[2/4] Setting up UDP Custom binaries..."
-mkdir -p /root/udp
+# ၂။ ယခင် ရှိပြီးသား Service ကို ရပ်တန့်ခြင်း
+systemctl stop zivpn.service 1> /dev/null 2> /dev/null
 
-# Config.json အလွတ်တစ်ခု ဖန်တီးခြင်း
-cat <<EOF > /root/udp/config.json
-{
-  "listen": ":7300",
-  "stream_buffer": 32768,
-  "receive_buffer": 32768,
-  "auth": {
-    "users": []
-  }
-}
-EOF
+# ၃။ ZiVPN Binary ကို ဒေါင်းလုဒ်ဆွဲပြီး Permission ပေးခြင်း
+echo -e "\n[2/6] Downloading ZiVPN UDP Binary..."
+wget https://github.com/zahidbd2/udp-zivpn/releases/download/udp-zivpn_1.4.9/udp-zivpn-linux-amd64 -O /usr/local/bin/zivpn 1> /dev/null 2> /dev/null
+chmod +x /usr/local/bin/zivpn
 
-# UDP Custom Binary ကို ဒေါင်းလုဒ်ဆွဲခြင်း (မိမိ၏ Direct Download Link ထည့်ရန်)
-# wget -O /root/udp/udp-custom https://example.com/udp-custom
-# chmod +x /root/udp/udp-custom
+mkdir -p /etc/zivpn
+wget https://raw.githubusercontent.com/zahidbd2/udp-zivpn/main/config.json -O /etc/zivpn/config.json 1> /dev/null 2> /dev/null
 
-# ၄။ Background Service (Systemd) ပြုလုပ်ခြင်း
-echo "[3/4] Creating Systemd Service..."
-cat <<EOF > /etc/systemd/system/udp-custom.service
+# ၄။ SSL Certificates နှင့် System Settings များ ပြုလုပ်ခြင်း
+echo -e "\n[3/6] Generating SSL Certificates & Optimizing System..."
+openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=California/L=Los Angeles/O=Example Corp/OU=IT Department/CN=zivpn" -keyout "/etc/zivpn/zivpn.key" -out "/etc/zivpn/zivpn.crt" 1> /dev/null 2> /dev/null
+
+sysctl -w net.core.rmem_max=16777216 1> /dev/null 2> /dev/null
+sysctl -w net.core.wmem_max=16777216 1> /dev/null 2> /dev/null
+
+# ၅။ Systemd Service ဖန်တီးခြင်း
+echo -e "\n[4/6] Creating Systemd Service..."
+cat <<EOF > /etc/systemd/system/zivpn.service
 [Unit]
-Description=UDP Custom Server Service
+Description=zivpn VPN Server
 After=network.target
 
 [Service]
+Type=simple
 User=root
-WorkingDirectory=/root/udp
-ExecStart=/root/udp/udp-custom server
+WorkingDirectory=/etc/zivpn
+ExecStart=/usr/local/bin/zivpn server -c /etc/zivpn/config.json
 Restart=always
+RestartSec=3
+Environment=ZIVPN_LOG_LEVEL=info
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
+NoNewPrivileges=true
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
+# ၆။ Firewall Rules နှင့် Port Forwarding သတ်မှတ်ခြင်း
+echo -e "\n[5/6] Configuring Firewall & Port Forwarding..."
 systemctl daemon-reload
-systemctl enable udp-custom
+systemctl enable zivpn.service
+systemctl start zivpn.service
 
-# ၅။ Terminal မှ 'udp' ဟု ရိုက်လျှင် ခေါ်သုံးနိုင်မည့် Manager Script ဖန်တီးခြင်း
-echo "[4/4] Setting up Manager Menu command..."
-cat <<'EOF' > /usr/bin/udp
+IFACE=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
+iptables -t nat -A PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j DNAT --to-destination :5667
+ufw allow 6000:19999/udp 1> /dev/null 2> /dev/null
+ufw allow 5667/udp 1> /dev/null 2> /dev/null
+
+# ၇။ Terminal မှ 'zivpn' ဟု ရိုက်ပါက ပွင့်လာမည့် Interactive Menu Command ဖန်တီးခြင်း
+echo -e "\n[6/6] Setting up ZiVPN Manager Menu Command..."
+cat <<'EOF' > /usr/bin/zivpn
 #!/bin/bash
 
-CONFIG_FILE="/root/udp/config.json"
+CONFIG_FILE="/etc/zivpn/config.json"
 
-udp_menu() {
+zivpn_menu() {
     clear
-    echo "=================================="
-    echo "     UDP CUSTOM MANAGER PANEL     "
-    echo "=================================="
-    echo "[1] Add UDP Account"
-    echo "[2] Delete UDP Account"
-    echo "[3] Show Active Accounts"
+    echo "=========================================="
+    echo "       ZiVPN UDP ACCOUNT MANAGER          "
+    echo "=========================================="
+    echo " Status    : $(systemctl is-active zivpn.service)"
+    echo " Server IP : $(curl -s ifconfig.me)"
+    echo " UDP Ports : 6000:19999 (DNAT -> 5667)"
+    echo "=========================================="
+    echo "[1] Add New Password"
+    echo "[2] Delete Password"
+    echo "[3] Show Active Passwords"
+    echo "[4] Restart ZiVPN Service"
     echo "[0] Exit"
-    echo "=================================="
-    read -p "Choose option: " opt
+    echo "=========================================="
+    read -p "//_ Choose an option: " opt
 
     case $opt in
         1)
-            read -p "Enter Username: " uname
-            read -p "Enter Password: " upass
-            jq --arg user "$uname:$upass" '.auth.users += [$user]' "$CONFIG_FILE" > /tmp/cfg.json && mv /tmp/cfg.json "$CONFIG_FILE"
-            systemctl restart udp-custom
-            echo -e "\nAccount $uname created successfully!"
+            echo -e "\n--- Add New Password ---"
+            read -p "Enter new password: " new_pass
+            if [ -n "$new_pass" ]; then
+                jq --arg p "$new_pass" '.config += [$p]' "$CONFIG_FILE" > /tmp/zivpn.tmp && mv /tmp/zivpn.tmp "$CONFIG_FILE"
+                systemctl restart zivpn.service
+                echo -e "\n[✔] Password '$new_pass' added successfully!"
+            else
+                echo -e "\n[!] Password cannot be empty!"
+            fi
             sleep 2
-            udp_menu
+            zivpn_menu
             ;;
         2)
-            read -p "Enter Username to Delete: " uname
-            read -p "Enter Password: " upass
-            jq --arg user "$uname:$upass" '.auth.users -= [$user]' "$CONFIG_FILE" > /tmp/cfg.json && mv /tmp/cfg.json "$CONFIG_FILE"
-            systemctl restart udp-custom
-            echo -e "\nAccount $uname deleted!"
+            echo -e "\n--- Delete Password ---"
+            read -p "Enter password to delete: " del_pass
+            if [ -n "$del_pass" ]; then
+                jq --arg p "$del_pass" '.config -= [$p]' "$CONFIG_FILE" > /tmp/zivpn.tmp && mv /tmp/zivpn.tmp "$CONFIG_FILE"
+                systemctl restart zivpn.service
+                echo -e "\n[✔] Password '$del_pass' deleted successfully!"
+            else
+                echo -e "\n[!] Password cannot be empty!"
+            fi
             sleep 2
-            udp_menu
+            zivpn_menu
             ;;
         3)
-            echo -e "\n--- Current Users ---"
-            jq '.auth.users[]' "$CONFIG_FILE"
+            echo -e "\n=========================================="
+            echo "       CURRENT ZIVPN PASSWORDS            "
+            echo "=========================================="
+            jq -r '.config[]' "$CONFIG_FILE" 2>/dev/null || echo "No passwords found."
+            echo "=========================================="
             read -p "Press Enter to return..."
-            udp_menu
+            zivpn_menu
+            ;;
+        4)
+            systemctl restart zivpn.service
+            echo -e "\n[✔] ZiVPN Service Restarted!"
+            sleep 2
+            zivpn_menu
             ;;
         0)
             exit 0
             ;;
         *)
-            echo "Invalid Option!"
+            echo -e "\n[!] Invalid Option!"
             sleep 1
-            udp_menu
+            zivpn_menu
             ;;
     esac
 }
 
-udp_menu
+zivpn_menu
 EOF
 
-# Menu command ကို run ခွင့်ပေးခြင်း
-chmod +x /usr/bin/udp
+# Menu command ကို execute permission ပေးခြင်း
+chmod +x /usr/bin/zivpn
 
 clear
 echo "=========================================="
-echo "    INSTALLATION SUCCESSFUL!             "
+echo "    ZIVPN UDP INSTALLATION COMPLETE!     "
 echo "=========================================="
-echo " Type 'udp' anywhere in terminal to start."
+echo " Type 'zivpn' anywhere to open manager.   "
 echo "=========================================="
