@@ -29,8 +29,6 @@ wget https://github.com/zahidbd2/udp-zivpn/releases/download/udp-zivpn_1.4.9/udp
 chmod +x /usr/local/bin/zivpn-core
 
 mkdir -p /etc/zivpn
-
-# Default config.json ဖိုင်အသစ် ဖန်တီးခြင်း (zi password အစား စိတ်ကြိုက် password ထည့်ရန်)
 cat <<EOF > /etc/zivpn/config.json
 {
   "listen": ":5667",
@@ -38,9 +36,7 @@ cat <<EOF > /etc/zivpn/config.json
   "key": "/etc/zivpn/zivpn.key",
   "auth": {
     "mode": "passwords",
-    "config": [
-      "123456"
-    ]
+    "config": []
   }
 }
 EOF
