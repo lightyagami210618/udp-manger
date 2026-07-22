@@ -32,7 +32,6 @@ mkdir -p /etc/zivpn
 cat <<EOF > /etc/zivpn/config.json
 {
   "listen": ":5667",
-  "protocol": "wechat",
   "cert": "/etc/zivpn/zivpn.crt",
   "key": "/etc/zivpn/zivpn.key",
   "obfs": "zivpn",
@@ -45,7 +44,7 @@ EOF
 
 # ၄။ SSL Certificates နှင့် System Settings များ ပြုလုပ်ခြင်း
 echo -e "\n${YELLOW}[3/6] Generating SSL Certificates & Optimizing System...${NC}"
-openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=California/L=Los Angeles/O=Example Corp/OU=IT Department/CN=zivpn" -keyout "/etc/zivpn/zivpn.key" -out "/etc/zivpn/zivpn.crt" 1> /dev/null 2> /dev/null
+openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=California/L=Los Angeles/O=Example Corp/OU=IT Department/CN=www.wechat.com" -keyout "/etc/zivpn/zivpn.key" -out "/etc/zivpn/zivpn.crt" 1> /dev/null 2> /dev/null
 
 sysctl -w net.core.rmem_max=16777216 1> /dev/null 2> /dev/null
 sysctl -w net.core.wmem_max=16777216 1> /dev/null 2> /dev/null
