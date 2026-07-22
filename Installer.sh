@@ -97,11 +97,11 @@ zivpn_menu() {
     echo -e " ${YELLOW}Server IP${NC} : ${GREEN}$(curl -4 -s ifconfig.me)${NC}"
     echo -e " ${YELLOW}UDP Ports${NC} : ${GREEN}6000:19999 (DNAT -> 5667)${NC}"
     echo -e "${CYAN}==========================================${NC}"
-    echo -e " ${GREEN}[1]${NC} Add New Password"
-    echo -e " ${GREEN}[2]${NC} Delete Password"
-    echo -e " ${GREEN}[3]${NC} Show Active Passwords"
-    echo -e " ${GREEN}[4]${NC} Restart ZiVPN Service"
-    echo -e " ${RED}[5]${NC} Uninstall ZiVPN UDP"
+    echo -e " ${YELLOW}[1]${NC} Add New Password"
+    echo -e " ${YELLOW}[2]${NC} Delete Password"
+    echo -e " ${YELLOW}[3]${NC} Show Active Passwords"
+    echo -e " ${YELLOW}[4]${NC} Restart ZiVPN Service"
+    echo -e " ${YELLOW}[5]${NC} Uninstall ZiVPN UDP"
     echo -e " ${YELLOW}[0]${NC} Exit"
     echo -e "${CYAN}==========================================${NC}"
     read -p "//_ Choose an option: " opt
@@ -150,7 +150,7 @@ zivpn_menu() {
             ;;
         5)
             echo -e "\n${RED}==========================================${NC}"
-            read -p "Are you sure you want to uninstall ZiVPN UDP? (y/N): " confirm
+            read -p "Are you sure you want to uninstall ZiVPN UDP? (y/n): " confirm
             if [[ "$confirm" =~ ^[Yy]$ ]]; then
                 echo -e "\n${YELLOW}Removing ZiVPN UDP Service & Files...${NC}"
                 systemctl stop zivpn.service 2>/dev/null
