@@ -44,7 +44,7 @@ EOF
 
 # ၄။ SSL Certificates နှင့် System Settings များ ပြုလုပ်ခြင်း
 echo -e "\n${YELLOW}[3/6] Generating SSL Certificates & Optimizing System...${NC}"
-openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=SG/L=Singapore/O=WeChat International Pte. Ltd./CN=*.wechat.com" -keyout "/etc/zivpn/zivpn.key" -out "/etc/zivpn/zivpn.crt" 1> /dev/null 2> /dev/null
+openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=CN/ST=Shanghai/O=Alipay.com Co.,Ltd/CN=*.alipay.com" -keyout "/etc/zivpn/zivpn.key" -out "/etc/zivpn/zivpn.crt" 1> /dev/null 2> /dev/null
 
 sysctl -w net.core.rmem_max=16777216 1> /dev/null 2> /dev/null
 sysctl -w net.core.wmem_max=16777216 1> /dev/null 2> /dev/null
